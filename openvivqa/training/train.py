@@ -1,0 +1,152 @@
+"""Script huấn luyện cho mô hình ViT5-VQA.
+
+Sử dụng script này bằng cách chạy
+
+```bash
+python -m openvivqa.training.train --data_dir path/to/data --output_dir path/to/out
+```
+
+Hãy tham khảo README.md để biết thêm chi tiết về tham số và ví dụ sử dụng.
+"""
+
+from __future__ import annotations
+
+import argparse
+import logging
+import os
+from typing import Callable
+
+import torch
+from transformers import Seq2SeqTrainingArguments
+
+from ..data.dataset import load_dataset, ViT5VQADataset, ViT5VQADataCollator
+from ..models.vit5_vqa import ViT5VQAModel
+from ..evaluation.metrics import compute_vqa_metrics
+from .trainer import CustomSeq2SeqTrainer
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Huấn luyện mô hình ViT5-VQA")
+    parser.add_argument(
+        "--data_dir", type=str, required=True, help="Thư mục chứa dữ liệu đã chuẩn bị"
+    )
+    parser.add_argument(
+        "--output_dir", type=str, default="vit5-vqa-results", help="Thư mục lưu mô hình và log"
+    )
+    parser.add_argument("--epochs", type=int, default=3, help="Số epoch huấn luyện")
+    parser.add_argument(
+        "--batch_size", type=int, default=24, help="Batch size mỗi thiết bị"
+    )
+    parser.add_argument(
+        "--gradient_accumulation_steps",
+        type=int,
+        default=2,
+        help="Số bước tích luỹ gradient",
+    )
+    parser.add_argument(
+        "--learning_rate", type=float, default=1e-4, help="Tốc độ học"
+    )
+    parser.add_argument(
+        "--vit5_model", type=str, default="VietAI/vit5-base", help="Tên mô hình ViT5"
+    )
+    parser.add_argument(
+        "--vit_model", type=str, default="google/vit-base-patch16-224-in21k", help="Tên mô hình ViT"
+    )
+    parser.add_argument(
+        "--num_workers", type=int, default=4, help="Số worker cho DataLoader"
+    )
+    parser.add_argument(
+        "--eval_steps",
+        type=int,
+        default=200,
+        help="Khoảng cách bước giữa các lần đánh giá trong quá trình train",
+    )
+    parser.add_argument(
+        "--save_steps",
+        type=int,
+        default=200,
+        help="Khoảng cách bước giữa các lần lưu checkpoint",
+    )
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    logging.basicConfig(level=logging.INFO)
+    logging.info("Bắt đầu tải dữ liệu...")
+    train_df, val_df, test_df = load_dataset(args.data_dir)
+    logging.info(
+        f"Đã tải dữ liệu: train={len(train_df)}, val={len(val_df)}, test={len(test_df)}"
+    )
+
+    # Khởi tạo mô hình
+    model = ViT5VQAModel(vit5_model_name=args.vit5_model, vit_model_name=args.vit_model)
+    if torch.cuda.is_available():
+        model.cuda()
+        logging.info("Sử dụng GPU để huấn luyện")
+    else:
+        logging.info("Không phát hiện GPU, sử dụng CPU")
+
+    # Chuẩn bị Dataset và collator
+    train_dataset = ViT5VQADataset(train_df, model.tokenizer, model.image_processor)
+    val_dataset = ViT5VQADataset(val_df, model.tokenizer, model.image_processor)
+    test_dataset = ViT5VQADataset(test_df, model.tokenizer, model.image_processor)
+    data_collator = ViT5VQADataCollator(model.tokenizer)
+
+    # Cấu hình huấn luyện
+    training_args = Seq2SeqTrainingArguments(
+        output_dir=args.output_dir,
+        num_train_epochs=args.epochs,
+        per_device_train_batch_size=args.batch_size,
+        per_device_eval_batch_size=args.batch_size,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
+        learning_rate=args.learning_rate,
+        weight_decay=0.01,
+        warmup_steps=500,
+        logging_dir=os.path.join(args.output_dir, "logs"),
+        logging_steps=200,
+        evaluation_strategy="steps",
+        eval_steps=args.eval_steps,
+        save_strategy="steps",
+        save_steps=args.save_steps,
+        save_total_limit=2,
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
+        report_to=None,
+        dataloader_num_workers=args.num_workers,
+        dataloader_pin_memory=False,
+        remove_unused_columns=False,
+        predict_with_generate=True,
+        generation_max_length=128,
+        generation_num_beams=2,
+        save_safetensors=False,
+        fp16=torch.cuda.is_available(),
+    )
+
+    # Hàm tính metric truyền vào trainer
+    def metrics_fn(eval_pred):
+        return compute_vqa_metrics(eval_pred, model.tokenizer)
+
+    trainer = CustomSeq2SeqTrainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=val_dataset,
+        data_collator=data_collator,
+        compute_metrics=metrics_fn,
+    )
+    logging.info("Bắt đầu huấn luyện...")
+    trainer.train()
+
+    logging.info("Đánh giá trên tập kiểm tra...")
+    test_results = trainer.evaluate(test_dataset)
+    logging.info(f"Kết quả trên tập test: {test_results}")
+
+    logging.info("Lưu mô hình cuối cùng...")
+    model.save_pretrained(os.path.join(args.output_dir, "final_model"))
+    logging.info("Huấn luyện hoàn tất")
+
+
+if __name__ == "__main__":
+    main()
