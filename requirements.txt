@@ -1,0 +1,14 @@
+torch>=2.0
+transformers>=4.31
+evaluate>=0.3
+scikit-learn>=1.1
+pandas>=1.5
+numpy>=1.23
+Pillow>=9.4
+matplotlib>=3.7
+gdown>=4.6
+requests>=2.28
+rouge-score>=0.1
+nltk>=3.8
+sacrebleu>=2.3
+datasets>=2.14
