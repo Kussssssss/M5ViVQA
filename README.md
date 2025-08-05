@@ -1,10 +1,7 @@
-# OpenViVQA Project
+# M5ViVQA Project
 
-**OpenViVQA** là dự án mã nguồn mở nhằm cung cấp mô hình trả lời câu hỏi trực quan
-(Visual Question Answering – VQA) tiếng Việt dựa trên bộ dữ liệu VLSP2023. Từ
-một sổ tay Jupyter ban đầu, chúng tôi đã tái cấu trúc toàn bộ mã nguồn thành
-một gói Python với các module rõ ràng để dễ dàng tái sử dụng và mở rộng cho
-các nghiên cứu khoa học.
+**M5ViVQA** là dự án mã nguồn mở nhằm cung cấp mô hình trả lời câu hỏi trực quan
+(Visual Question Answering – VQA) tiếng Việt dựa trên bộ dữ liệu OpenViVQA.
 
 ## Cấu trúc thư mục
 
