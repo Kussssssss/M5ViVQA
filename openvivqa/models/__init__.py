@@ -5,5 +5,6 @@ toán VQA tiếng Việt.
 """
 
 from .vit5_vqa import ViT5VQAModel
+from .vit5_vqa_moe_decoder import ViT5VQAModelMoEDecoder
 
-__all__ = ["ViT5VQAModel"]
+__all__ = ["ViT5VQAModel", "ViT5VQAModelMoEDecoder"]
