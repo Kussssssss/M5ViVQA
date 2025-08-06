@@ -87,3 +87,20 @@ phương thức tính BLEU‑1/2/3/4, METEOR, ROUGE‑L và CIDEr cho dự đoá
 
 Mọi đóng góp nhằm cải thiện code hoặc tài liệu đều được hoan nghênh. Hãy tạo
 pull request hoặc issue nếu bạn gặp vấn đề.
+
+## Chạy thử với dữ liệu mẫu
+
+Bạn có thể tạo một bộ dữ liệu nhỏ gọn để thử nghiệm nhanh toàn bộ quy trình huấn luyện.
+Thực hiện script sau để sinh ba hình và chú thích câu hỏi:
+
+```bash
+python scripts/create_sample_data.py --output_dir sample_data
+```
+
+Sau khi tạo xong dữ liệu mẫu, bạn có thể huấn luyện mô hình với các siêu tham số tối giản như dưới đây (tương ứng nội dung trong `config_sample.yaml`):
+
+```bash
+python -m openvivqa.training.train --data_dir sample_data --output_dir sample_results --epochs 1 --batch_size 1 --gradient_accumulation_steps 1 --learning_rate 1e-4 --num_workers 0 --eval_steps 1 --save_steps 1 --generation_max_length 32 --generation_num_beams 1
+```
+
+Thực nghiệm nhỏ này chỉ cần một GPU với VRAM khoảng **8 GB** (hoặc có thể chạy trên CPU, nhưng thời gian sẽ lâu hơn). Nhờ dữ liệu rất nhỏ và siêu tham số tối giản, bạn có thể kiểm tra toàn bộ quy trình huấn luyện và đánh giá mô hình trong vòng một vài phút.
