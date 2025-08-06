@@ -1,7 +1,7 @@
 
 # M5ViVQA Project
 
-**M5ViVQA** là một dự án nghiên cứu khoa học nhằm xây dựng và đánh giá mô hình Trả lời Câu hỏi Trực quan (Visual Question Answering – VQA) bằng tiếng Việt. Dự án sử dụng kiến trúc truyền thống (không dựa trên các mô hình ngôn ngữ lớn) để thực nghiệm và so sánh trên các bộ dữ liệu OpenViVQA, ViTextVQA và EVJVQA. Mục tiêu là tìm hiểu hiệu quả của các phương pháp không dùng LLM trong bài toán VQA tiếng Việt.
+**M5ViVQA** là một dự án nghiên cứu khoa học nhằm xây dựng và đánh giá mô hình Trả lời Câu hỏi Trực quan (Visual Question Answering – VQA) bằng tiếng Việt. Dự án sử dụng kiến trúc truyền thống để thực nghiệm và so sánh trên các bộ dữ liệu OpenViVQA, ViTextVQA và EVJVQA. Mục tiêu là xây dựng phương pháp SOTA trong bài toán VQA tiếng Việt trên các bộ dữ liệu được thực nghiệm.
 
 ## Cấu trúc thư mục
 
