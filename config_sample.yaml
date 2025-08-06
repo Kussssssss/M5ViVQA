@@ -1,0 +1,33 @@
+# Sample configuration for quick experiments on small synthetic data
+# Adjust parameters for minimal runtime while testing the training pipeline.
+
+dataset:
+  data_dir: sample_data
+
+output:
+  output_dir: sample_results
+
+model:
+  vit5_model: VietAI/vit5-base
+  vit_model: google/vit-base-patch16-224-in21k
+
+training:
+  epochs: 1
+  batch_size: 1
+  gradient_accumulation_steps: 1
+  learning_rate: 1e-4
+  num_workers: 0
+  eval_steps: 1
+  save_steps: 1
+  weight_decay: 0.0
+  warmup_steps: 0
+  logging_steps: 1
+  generation_max_length: 32
+  generation_num_beams: 1
+
+evaluation:
+  metrics:
+    - bleu1
+    - meteor
+    - rougeL
+    - cider
