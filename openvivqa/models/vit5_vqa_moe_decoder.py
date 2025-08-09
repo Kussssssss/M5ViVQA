@@ -19,7 +19,7 @@ Kiến trúc tổng quát:
   cảnh (``encoder_outputs``).
 * Khi huấn luyện, mô hình T5 gốc được gọi với ``encoder_outputs`` và
   ``labels`` để sinh ra ``decoder_hidden_states``. Một lớp MoE được áp dụng
-  lên đầu ra ẩn cuối cùng của decoder trước khi đư¡ qua ``lm_head`` để tính
+  lên đầu ra ẩn cuối cùng của decoder trước khi đưa qua ``lm_head`` để tính
   logits và loss. Hàm mất mát được tính bằng cross entropy với nhãn.
 * Khi suy luận, mô hình sử dụng ``generate`` của T5 với ``encoder_outputs``;
   MoE không được dùng trong quá trình giải mã tự hồi quy vì việc chèn MoE
@@ -43,8 +43,7 @@ from transformers import (
     AutoModelForSeq2SeqLM,
     AutoTokenizer,
     ViTModel,
-    ViT
-ImageProcessor,
+    ViTImageProcessor,
 )
 from transformers.modeling_outputs import BaseModelOutput
 
@@ -52,7 +51,7 @@ from transformers.modeling_outputs import BaseModelOutput
 class MoE(nn.Module):
     """Lớp Mixture‑of‑Experts đơn giản.
 
-    Mệi chuyên gia là một mạng feed‑forward hai tầng ``Linear -> ReLU -> Linear``.
+    Mỗi chuyên gia là một mạng feed‑forward hai tầng ``Linear -> ReLU -> Linear``.
     Một mạng gating tính phân phối xác suất qua các chuyên gia dựa trên đầu vào.
 
     Parameters
@@ -60,7 +59,7 @@ class MoE(nn.Module):
     input_dim : int
         Kích thước của vector đầu vào.
     hidden_dim : int
-        Kích thước ẩn của mệi chuyên gia.
+        Kích thước ẩn của mỗi chuyên gia.
     num_experts : int
         Số lượng chuyên gia trong mô hình.
     """
@@ -145,7 +144,7 @@ class ViT5VQAModelMoEDecoder(nn.Module):
         self.layer_norm = nn.LayerNorm(self.vit5.config.d_model)
 
         # Thiết lập lớp MoE cho decoder. Nếu ``moe_hidden_dim`` không được
-        # cung cấp thì dùng 4 * d_model giông với feed‑forward network trong T5.
+        # cung cấp thì dùng 4 * d_model giống với feed‑forward network trong T5.
         if moe_hidden_dim is None:
             moe_hidden_dim = 4 * self.vit5.config.d_model
         self.moe_decoder = MoE(
