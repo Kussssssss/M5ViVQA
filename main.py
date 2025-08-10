@@ -72,7 +72,7 @@ def run_experiment(cfg: dict) -> None:
         warmup_steps=train_cfg.get("warmup_steps", 0),
         logging_dir=os.path.join(output_dir, "logs"),
         logging_steps=train_cfg.get("logging_steps", 200),
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         eval_steps=train_cfg.get("eval_steps", 200),
         save_strategy="steps",
         save_steps=train_cfg.get("save_steps", 200),
