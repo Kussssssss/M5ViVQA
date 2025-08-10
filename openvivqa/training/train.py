@@ -105,7 +105,7 @@ def main():
         warmup_steps=500,
         logging_dir=os.path.join(args.output_dir, "logs"),
         logging_steps=200,
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         eval_steps=args.eval_steps,
         save_strategy="steps",
         save_steps=args.save_steps,
