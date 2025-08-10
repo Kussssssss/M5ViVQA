@@ -19,6 +19,8 @@ from transformers import Seq2SeqTrainingArguments
 # Import configuration dictionaries
 from config import FULL_CONFIG, SAMPLE_CONFIG
 
+os.environ["WANDB_DISABLED"] = "True"
+
 
 def get_config(name: str):
     """Return the configuration dictionary based on the provided name."""
