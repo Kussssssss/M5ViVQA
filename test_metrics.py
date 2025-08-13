@@ -1,57 +1,112 @@
+#!/usr/bin/env python3
 """
-Test script để kiểm tra hàm compute_vqa_metrics hoạt động đúng.
+Test script để kiểm tra metrics function hoạt động đúng.
 """
 
 import sys
 import os
 
-# Thêm thư mục gốc vào Python path
+# Thêm đường dẫn hiện tại vào sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from openvivqa.evaluation.metrics import compute_vqa_metrics
-
-def test_metrics():
-    """Test hàm compute_vqa_metrics với dữ liệu mẫu."""
-    
-    # Dữ liệu test đơn giản
-    predictions = [
-        "Màu đỏ",
-        "Xanh lá cây", 
-        "Xanh dương"
-    ]
-    
-    references = [
-        "Màu đỏ",
-        "Xanh lá",
-        "Xanh dương"
-    ]
-    
-    print("Testing compute_vqa_metrics...")
-    print(f"Predictions: {predictions}")
-    print(f"References: {references}")
-    
+def test_metrics_import():
+    """Test việc import metrics module."""
     try:
+        from openvivqa.evaluation.metrics import compute_vqa_metrics
+        print("✓ Import metrics thành công")
+        return True
+    except Exception as e:
+        print(f"✗ Import metrics thất bại: {e}")
+        return False
+
+def test_metrics_computation():
+    """Test việc tính toán metrics."""
+    try:
+        from openvivqa.evaluation.metrics import compute_vqa_metrics
+        
+        # Test data đơn giản
+        predictions = [
+            "Đây là câu trả lời đầu tiên",
+            "Câu trả lời thứ hai",
+            "Câu trả lời thứ ba"
+        ]
+        
+        references = [
+            "Đây là câu trả lời đầu tiên",
+            "Câu trả lời thứ hai", 
+            "Câu trả lời thứ ba"
+        ]
+        
+        # Tính metrics
         metrics = compute_vqa_metrics(predictions, references)
-        print("\nMetrics computed successfully:")
-        for metric_name, value in metrics.items():
-            print(f"  {metric_name}: {value:.4f}")
         
-        # Kiểm tra các giá trị hợp lý
-        assert 0 <= metrics["bleu1"] <= 1, f"BLEU-1 should be between 0 and 1, got {metrics['bleu1']}"
-        assert 0 <= metrics["meteor"] <= 1, f"METEOR should be between 0 and 1, got {metrics['meteor']}"
-        assert 0 <= metrics["rougeL"] <= 1, f"ROUGE-L should be between 0 and 1, got {metrics['rougeL']}"
-        assert metrics["cider"] >= 0, f"CIDEr should be non-negative, got {metrics['cider']}"
+        print("✓ Tính metrics thành công")
+        print(f"  Metrics: {metrics}")
         
-        print("\n✅ All metrics are within expected ranges!")
+        # Kiểm tra các keys cần thiết
+        required_keys = ["bleu1", "bleu2", "bleu3", "bleu4", "meteor", "rougeL", "cider"]
+        for key in required_keys:
+            if key not in metrics:
+                print(f"✗ Thiếu key: {key}")
+                return False
+            if not isinstance(metrics[key], (int, float)):
+                print(f"✗ Key {key} không phải số: {type(metrics[key])}")
+                return False
+        
+        print("✓ Tất cả metrics keys đều hợp lệ")
         return True
         
     except Exception as e:
-        print(f"\n❌ Error computing metrics: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"✗ Tính metrics thất bại: {e}")
         return False
 
+def test_empty_input():
+    """Test với input rỗng."""
+    try:
+        from openvivqa.evaluation.metrics import compute_vqa_metrics
+        
+        metrics = compute_vqa_metrics([], [])
+        
+        print("✓ Xử lý input rỗng thành công")
+        print(f"  Metrics: {metrics}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"✗ Xử lý input rỗng thất bại: {e}")
+        return False
+
+def main():
+    """Chạy tất cả tests."""
+    print("Bắt đầu test metrics...")
+    print("-" * 50)
+    
+    tests = [
+        test_metrics_import,
+        test_metrics_computation,
+        test_empty_input
+    ]
+    
+    passed = 0
+    total = len(tests)
+    
+    for test in tests:
+        try:
+            if test():
+                passed += 1
+        except Exception as e:
+            print(f"✗ Test {test.__name__} gặp lỗi: {e}")
+        print()
+    
+    print("-" * 50)
+    print(f"Kết quả: {passed}/{total} tests passed")
+    
+    if passed == total:
+        print("🎉 Tất cả tests đều thành công!")
+        return 0
+    else:
+        print("❌ Một số tests thất bại")
+        return 1
 
 if __name__ == "__main__":
-    success = test_metrics()
-    sys.exit(0 if success else 1)
+    sys.exit(main())

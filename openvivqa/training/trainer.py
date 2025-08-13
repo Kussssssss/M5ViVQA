@@ -10,7 +10,7 @@ import os
 from typing import Any, Optional
 
 import torch
-from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments
+from transformers import Seq2SeqTrainer
 
 
 class CustomSeq2SeqTrainer(Seq2SeqTrainer):

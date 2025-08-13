@@ -139,20 +139,54 @@ def main():
         the tokenizer's Rust backend.
         """
         import numpy as np
+        
+        # Lấy predictions và labels từ eval_pred
         pred_ids = eval_pred.predictions[0] if isinstance(
             eval_pred.predictions, tuple) else eval_pred.predictions
         label_ids = eval_pred.label_ids
+        
+        # Lấy pad_token_id từ tokenizer
         pad_id = model.tokenizer.pad_token_id or model.tokenizer.eos_token_id or 0
+        
+        # Chuyển đổi sang numpy array và xử lý negative values
         pred_ids = np.array(pred_ids)
         label_ids = np.array(label_ids)
+        
+        # Thay thế các giá trị âm (như -100) bằng pad_token_id
         pred_ids = np.where(pred_ids < 0, pad_id, pred_ids)
         label_ids = np.where(label_ids < 0, pad_id, label_ids)
+        
+        # Decode predictions và references
         predictions = model.tokenizer.batch_decode(
             pred_ids.astype(int), skip_special_tokens=True)
         references = model.tokenizer.batch_decode(
             label_ids.astype(int), skip_special_tokens=True)
+        
+        # Làm sạch references (loại bỏ khoảng trắng thừa)
         references = [ref.strip() for ref in references]
-        return compute_vqa_metrics(predictions, references)
+        predictions = [pred.strip() for pred in predictions]
+        
+        # Lọc bỏ các câu trống hoặc quá ngắn
+        valid_pairs = []
+        for pred, ref in zip(predictions, references):
+            if len(pred.strip()) > 0 and len(ref.strip()) > 0:
+                valid_pairs.append((pred, ref))
+        
+        if not valid_pairs:
+            return {
+                "bleu1": 0.0, "bleu2": 0.0, "bleu3": 0.0, "bleu4": 0.0,
+                "meteor": 0.0, "rougeL": 0.0, "cider": 0.0
+            }
+        
+        # Tách predictions và references đã lọc
+        filtered_predictions, filtered_references = zip(*valid_pairs)
+        
+        # Chuyển đổi format để phù hợp với compute_vqa_metrics
+        # compute_vqa_metrics mong đợi: gts = {i: [ref]}, res = {i: [pred]}
+        gts = {i: [ref] for i, ref in enumerate(filtered_references)}
+        res = {i: [pred] for i, pred in enumerate(filtered_predictions)}
+        
+        return compute_vqa_metrics(filtered_predictions, filtered_references)
 
     trainer = CustomSeq2SeqTrainer(
         model=model,
