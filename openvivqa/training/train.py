@@ -78,10 +78,16 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     args = parse_args()
-    logging.basicConfig(level=logging.INFO)
-    logging.info("Bắt đầu tải dữ liệu...")
+    
+    # Tắt progress bar của huggingface_hub để không bị nhiễu
+    import os
+    os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+    os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
+    
+    logging.basicConfig(level=print)
+    print("Bắt đầu tải dữ liệu...")
     train_df, val_df, test_df = load_dataset(args.data_dir)
-    logging.info(
+    print(
         f"Đã tải dữ liệu: train={len(train_df)}, val={len(val_df)}, test={len(test_df)}"
     )
 
@@ -89,9 +95,9 @@ def main():
     model = ViT5VQAModel(vit5_model_name=args.vit5_model, vit_model_name=args.vit_model)
     if torch.cuda.is_available():
         model.cuda()
-        logging.info("Sử dụng GPU để huấn luyện")
+        print("Sử dụng GPU để huấn luyện")
     else:
-        logging.info("Không phát hiện GPU, sử dụng CPU")
+        print("Không phát hiện GPU, sử dụng CPU")
 
     # Chuẩn bị Dataset và collator
     train_dataset = ViT5VQADataset(train_df, model.tokenizer, model.image_processor)
@@ -119,16 +125,22 @@ def main():
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
         greater_is_better=False,
-        report_to=None,
+        report_to=None,  # Tắt wandb và các reporting tools
         dataloader_num_workers=args.num_workers,
         dataloader_pin_memory=False,
         remove_unused_columns=False,
         predict_with_generate=True,
         generation_max_length=128,
         generation_num_beams=2,
-        disable_tqdm=False,
+        disable_tqdm=False,  # Giữ tqdm cho Trainer
         save_safetensors=False,
         fp16=torch.cuda.is_available(),
+        dataloader_drop_last=False,
+        hub_model_id=None,
+        push_to_hub=False,
+        logging_first_step=True,
+        logging_strategy="steps",
+        ddp_find_unused_parameters=False,
     )
 
     # Hàm tính metric truyền vào trainer
@@ -192,16 +204,23 @@ def main():
         compute_metrics=metrics_fn,
         processing_class=model.tokenizer,
     )
-    logging.info("Bắt đầu huấn luyện...")
+    
+    # Log thông tin training
+    total_steps = len(train_dataset) // args.batch_size * args.epochs
+    print(f"Bắt đầu huấn luyện với {total_steps} steps...")
+    print(f"Batch size: {args.batch_size}, Epochs: {args.epochs}")
+    print(f"Learning rate: {args.learning_rate}")
+    print(f"Gradient accumulation steps: {args.gradient_accumulation_steps}")
+    
     trainer.train()
 
-    logging.info("Đánh giá trên tập kiểm tra...")
+    print("Đánh giá trên tập kiểm tra...")
     test_results = trainer.evaluate(test_dataset)
-    logging.info(f"Kết quả trên tập test: {test_results}")
+    print(f"Kết quả trên tập test: {test_results}")
 
-    logging.info("Lưu mô hình cuối cùng...")
+    print("Lưu mô hình cuối cùng...")
     model.save_pretrained(os.path.join(args.output_dir, "final_model"))
-    logging.info("Huấn luyện hoàn tất")
+    print("Huấn luyện hoàn tất")
 
 
 if __name__ == "__main__":
