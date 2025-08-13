@@ -155,6 +155,7 @@ def main():
         eval_dataset=val_dataset,
         data_collator=data_collator,
         compute_metrics=metrics_fn,
+        processing_class=model.tokenizer,
     )
     logging.info("Bắt đầu huấn luyện...")
     trainer.train()
