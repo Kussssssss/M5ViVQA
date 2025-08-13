@@ -1,14 +1,3 @@
-"""Script huấn luyện cho mô hình ViT5-VQA.
-
-Sử dụng script này bằng cách chạy
-
-```bash
-python -m openvivqa.training.train --data_dir path/to/data --output_dir path/to/out
-```
-
-Hãy tham khảo README.md để biết thêm chi tiết về tham số và ví dụ sử dụng.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -64,13 +53,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--eval_steps",
         type=int,
-        default=200,
+        default=50,
         help="Khoảng cách bước giữa các lần đánh giá trong quá trình train",
     )
     parser.add_argument(
         "--save_steps",
         type=int,
-        default=200,
+        default=50,
         help="Khoảng cách bước giữa các lần lưu checkpoint",
     )
     return parser.parse_args()
@@ -79,25 +68,14 @@ def parse_args() -> argparse.Namespace:
 def main():
     args = parse_args()
     
-    # Tắt progress bar của huggingface_hub để không bị nhiễu
-    import os
-    os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
-    os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
-    
-    logging.basicConfig(level=print)
-    print("Bắt đầu tải dữ liệu...")
     train_df, val_df, test_df = load_dataset(args.data_dir)
-    print(
-        f"Đã tải dữ liệu: train={len(train_df)}, val={len(val_df)}, test={len(test_df)}"
-    )
 
     # Khởi tạo mô hình
     model = ViT5VQAModel(vit5_model_name=args.vit5_model, vit_model_name=args.vit_model)
     if torch.cuda.is_available():
         model.cuda()
-        print("Sử dụng GPU để huấn luyện")
     else:
-        print("Không phát hiện GPU, sử dụng CPU")
+        pass  # Sử dụng CPU
 
     # Chuẩn bị Dataset và collator
     train_dataset = ViT5VQADataset(train_df, model.tokenizer, model.image_processor)
@@ -127,7 +105,6 @@ def main():
         greater_is_better=False,
         report_to=None,  # Tắt wandb và các reporting tools
         dataloader_num_workers=args.num_workers,
-        dataloader_pin_memory=False,
         remove_unused_columns=False,
         predict_with_generate=True,
         generation_max_length=128,
@@ -135,21 +112,11 @@ def main():
         disable_tqdm=False,  # Giữ tqdm cho Trainer
         save_safetensors=False,
         fp16=torch.cuda.is_available(),
-        dataloader_drop_last=False,
-        hub_model_id=None,
-        push_to_hub=False,
-        logging_first_step=True,
-        logging_strategy="steps",
-        ddp_find_unused_parameters=False,
     )
 
     # Hàm tính metric truyền vào trainer
     def metrics_fn(eval_pred) -> dict[str, float]:
-        """
-        Sanitize both prediction and label IDs by replacing negative values 
-        (e.g. -100) with the pad_token_id. This prevents OverflowError from 
-        the tokenizer's Rust backend.
-        """
+    
         import numpy as np
         
         # Lấy predictions và labels từ eval_pred
@@ -201,26 +168,13 @@ def main():
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         data_collator=data_collator,
-        compute_metrics=metrics_fn,
-        processing_class=model.tokenizer,
+        compute_metrics=metrics_fn
     )
-    
-    # Log thông tin training
-    total_steps = len(train_dataset) // args.batch_size * args.epochs
-    print(f"Bắt đầu huấn luyện với {total_steps} steps...")
-    print(f"Batch size: {args.batch_size}, Epochs: {args.epochs}")
-    print(f"Learning rate: {args.learning_rate}")
-    print(f"Gradient accumulation steps: {args.gradient_accumulation_steps}")
     
     trainer.train()
 
-    print("Đánh giá trên tập kiểm tra...")
     test_results = trainer.evaluate(test_dataset)
-    print(f"Kết quả trên tập test: {test_results}")
-
-    print("Lưu mô hình cuối cùng...")
     model.save_pretrained(os.path.join(args.output_dir, "final_model"))
-    print("Huấn luyện hoàn tất")
 
 
 if __name__ == "__main__":

@@ -1,35 +1,3 @@
-"""Mô hình ViT5-VQA với decoder tích hợp Mixture‑of‑Experts (MoE).
-
-Mục tiêu của mô hình này là đưa cơ chế MoE vào phần giải mã (decoder) của
-mô hình T5 trong kiến trúc ViT5-VQA. Thay vì chèn MoE ở đầu ra của encoder
-như phiên bản trước, lớp MoE sẽ được áp dụng lên đầu ra ẩn cuối cùng của
-decoder trước khi chuyển qua lớp ``lm_head`` để dự đoán token. Điều này
-giúp bổ sung đa dạng chuyên gia vào quá trình sinh câu trả lời mà vẫn tận
-dụng lại toàn bộ kiến trúc encoder/decoder có sẵn của T5.
-
-Kiến trúc tổng quát:
-
-* Ảnh được mã hoá bởi ViT (``vit_model``) và chiếu sang cùng không gian với
-  embedding của câu hỏi bằng ``image_projection``.
-* Câu hỏi (chuỗi token ``input_ids``) được embed bằng token embedding của
-  T5 (``vit5.encoder.embed_tokens``).
-* Hai nguồn thông tin ảnh và câu hỏi được trộn với nhau thông qua một lớp
-  attention đa đầu ``fusion_layer`` và sau đó cộng residual và chuẩn hoá.
-* Kết quả trộn này được đưa vào encoder của T5 để trích xuất biểu diễn ngữ
-  cảnh (``encoder_outputs``).
-* Khi huấn luyện, mô hình T5 gốc được gọi với ``encoder_outputs`` và
-  ``labels`` để sinh ra ``decoder_hidden_states``. Một lớp MoE được áp dụng
-  lên đầu ra ẩn cuối cùng của decoder trước khi đưa qua ``lm_head`` để tính
-  logits và loss. Hàm mất mát được tính bằng cross entropy với nhãn.
-* Khi suy luận, mô hình sử dụng ``generate`` của T5 với ``encoder_outputs``;
-  MoE không được dùng trong quá trình giải mã tự hồi quy vì việc chèn MoE
-  vào beam search phức tạp và nằm ngoài phạm vi thực nghiệm này.
-
-Lớp MoE trong file này được cài đặt đơn giản: một mạng gating học xác suất
-cho từng chuyên gia và ``num_experts`` mạng con (feed‑forward) vận hành
-song song. Đầu ra của MoE là tổng có trọng số của các đầu ra chuyên gia.
-"""
-
 from __future__ import annotations
 
 import json
@@ -192,20 +160,7 @@ class ViT5VQAModelMoEDecoder(nn.Module):
         pixel_values: torch.Tensor,
         labels: Optional[torch.Tensor] = None,
     ) -> Dict[str, Any]:
-        """Lan truyền tiến để tính loss hoặc trả về encoder_outputs.
-
-        Nếu ``labels`` được cung cấp thì đây là chế độ huấn luyện. Mô hình
-        thực hiện các bước sau:
-        1. Mã hoá ảnh và câu hỏi, trộn với nhau bằng attention.
-        2. Tính encoder_outputs qua encoder của T5.
-        3. Gọi mô hình T5 để lấy ``decoder_hidden_states`` (yêu cầu
-           ``output_hidden_states=True``).
-        4. Áp dụng lớp MoE lên đầu ra ẩn cuối cùng của decoder.
-        5. Tính logits qua ``lm_head`` và loss bằng cross entropy.
-
-        Nếu ``labels`` không được cung cấp thì mô hình chỉ trả về
-        ``encoder_outputs`` để hỗ trợ cho quá trình generate.
-        """
+       
         # 1. Encode hình ảnh và fuse với câu hỏi
         image_outputs = self.vit(pixel_values=pixel_values)
         image_features = image_outputs.last_hidden_state  # [batch, seq_len_img, hidden_size]
