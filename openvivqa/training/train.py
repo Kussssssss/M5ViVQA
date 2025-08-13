@@ -47,6 +47,12 @@ def parse_args() -> argparse.Namespace:
         "--learning_rate", type=float, default=1e-4, help="Tốc độ học"
     )
     parser.add_argument(
+        "--weight_decay", type=float, default=0.01, help="Weight decay cho optimizer"
+    )
+    parser.add_argument(
+        "--warmup_steps", type=int, default=500, help="Số bước warmup"
+    )
+    parser.add_argument(
         "--vit5_model", type=str, default="VietAI/vit5-base", help="Tên mô hình ViT5"
     )
     parser.add_argument(
@@ -101,8 +107,8 @@ def main():
         per_device_eval_batch_size=args.batch_size,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         learning_rate=args.learning_rate,
-        weight_decay=0.01,
-        warmup_steps=500,
+        weight_decay=args.weight_decay,
+        warmup_steps=args.warmup_steps,
         logging_dir=os.path.join(args.output_dir, "logs"),
         logging_steps=200,
         eval_strategy="steps",
@@ -120,13 +126,27 @@ def main():
         predict_with_generate=True,
         generation_max_length=128,
         generation_num_beams=2,
+        disable_tqdm=False,
         save_safetensors=False,
         fp16=torch.cuda.is_available(),
     )
 
     # Hàm tính metric truyền vào trainer
     def metrics_fn(eval_pred):
-        return compute_vqa_metrics(eval_pred, model.tokenizer)
+        pred_ids = eval_pred.predictions[0] if isinstance(eval_pred.predictions, tuple) else eval_pred.predictions
+        label_ids = eval_pred.label_ids
+        # Thay -100 bằng pad_token_id để decode an toàn
+        pad_id = model.tokenizer.pad_token_id
+        if pad_id is None:
+            pad_id = 0
+        import numpy as np
+        label_ids = np.where(label_ids == -100, pad_id, label_ids)
+        # Decode predictions và labels thành text
+        predictions = model.tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
+        references = model.tokenizer.batch_decode(label_ids, skip_special_tokens=True)
+        # Chuẩn hoá nhẹ
+        references = [ref.strip() for ref in references]
+        return compute_vqa_metrics(predictions, references)
 
     trainer = CustomSeq2SeqTrainer(
         model=model,

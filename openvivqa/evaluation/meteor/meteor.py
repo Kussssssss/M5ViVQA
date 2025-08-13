@@ -5,10 +5,14 @@ import os
 import subprocess
 import threading
 import tarfile
-from evaluation.utils import download_from_url
+import urllib.request
 
 METEOR_GZ_URL = 'http://aimagelab.ing.unimore.it/speaksee/data/meteor.tgz'
 METEOR_JAR = 'meteor-1.5.jar'
+
+def download_from_url(url, filepath):
+    """Download file from URL to filepath."""
+    urllib.request.urlretrieve(url, filepath)
 
 class Meteor:
     def __init__(self):

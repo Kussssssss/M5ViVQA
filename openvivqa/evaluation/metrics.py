@@ -1,19 +1,11 @@
-"""
-Compute VQA evaluation metrics using official implementations from the
-OpenViVQA project.
-
-Given lists of predictions and references, this module computes BLEU‑1/2/3/4,
-METEOR, ROUGE‑L và CIDEr bằng cách sử dụng các lớp `Bleu`, `Meteor`,
-`Rouge` và `Cider` trong thư mục evaluation bạn vừa sao chép.
-"""
-
 from __future__ import annotations
 from typing import List, Dict
 
-from evaluation.bleu.bleu import Bleu
-from evaluation.meteor.meteor import Meteor
-from evaluation.rouge.rouge import Rouge
-from evaluation.cider.cider import Cider
+# Import trực tiếp từ các module có sẵn
+from .bleu.bleu import Bleu
+from .meteor.meteor import Meteor
+from .rouge.rouge import Rouge
+from .cider.cider import Cider
 
 def compute_vqa_metrics(predictions: List[str], references: List[str]) -> Dict[str, float]:
     assert len(predictions) == len(references), (
