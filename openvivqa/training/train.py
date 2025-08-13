@@ -110,7 +110,7 @@ def main():
         weight_decay=args.weight_decay,
         warmup_steps=args.warmup_steps,
         logging_dir=os.path.join(args.output_dir, "logs"),
-        logging_steps=200,
+        logging_steps=2,
         eval_strategy="steps",
         eval_steps=args.eval_steps,
         save_strategy="steps",
@@ -132,19 +132,25 @@ def main():
     )
 
     # Hàm tính metric truyền vào trainer
-    def metrics_fn(eval_pred):
-        pred_ids = eval_pred.predictions[0] if isinstance(eval_pred.predictions, tuple) else eval_pred.predictions
-        label_ids = eval_pred.label_ids
-        # Thay -100 bằng pad_token_id để decode an toàn
-        pad_id = model.tokenizer.pad_token_id
-        if pad_id is None:
-            pad_id = 0
+    def metrics_fn(eval_pred) -> dict[str, float]:
+        """
+        Sanitize both prediction and label IDs by replacing negative values 
+        (e.g. -100) with the pad_token_id. This prevents OverflowError from 
+        the tokenizer's Rust backend.
+        """
         import numpy as np
-        label_ids = np.where(label_ids == -100, pad_id, label_ids)
-        # Decode predictions và labels thành text
-        predictions = model.tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
-        references = model.tokenizer.batch_decode(label_ids, skip_special_tokens=True)
-        # Chuẩn hoá nhẹ
+        pred_ids = eval_pred.predictions[0] if isinstance(
+            eval_pred.predictions, tuple) else eval_pred.predictions
+        label_ids = eval_pred.label_ids
+        pad_id = model.tokenizer.pad_token_id or model.tokenizer.eos_token_id or 0
+        pred_ids = np.array(pred_ids)
+        label_ids = np.array(label_ids)
+        pred_ids = np.where(pred_ids < 0, pad_id, pred_ids)
+        label_ids = np.where(label_ids < 0, pad_id, label_ids)
+        predictions = model.tokenizer.batch_decode(
+            pred_ids.astype(int), skip_special_tokens=True)
+        references = model.tokenizer.batch_decode(
+            label_ids.astype(int), skip_special_tokens=True)
         references = [ref.strip() for ref in references]
         return compute_vqa_metrics(predictions, references)
 
