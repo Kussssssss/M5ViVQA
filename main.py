@@ -19,6 +19,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from openvivqa.training.train import main as train_main
 
+os.environ["WANDB_DISABLED"] = "True"
+
 
 def get_config(name: str):
     """Return the configuration dictionary based on the provided name."""
