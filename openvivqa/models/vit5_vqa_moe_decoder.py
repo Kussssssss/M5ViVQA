@@ -135,12 +135,7 @@ class ViT5VQAModelMoEDecoder(nn.Module):
         return self.vit5.prepare_inputs_for_generation(*args, **kwargs)
 
     def save_pretrained(self, save_directory: str, **kwargs: Any) -> None:
-        """Lưu mô hình và tokenizer sang một thư mục.
-
-        Hàm override này sử dụng ``torch.save`` thay vì safetensors để tránh
-        vấn đề về định dạng. Nó lưu state_dict của toàn bộ module và thêm
-        config, tokenizer, image_processor vào thư mục.
-        """
+        
         os.makedirs(save_directory, exist_ok=True)
         # Lưu trọng số mô hình
         model_path = os.path.join(save_directory, "pytorch_model.bin")

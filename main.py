@@ -40,11 +40,6 @@ def run_experiment(cfg: dict) -> None:
 
     os.makedirs(output_dir, exist_ok=True)
 
-    logging.basicConfig(level=logging.INFO)
-    logging.info(f"Using configuration: {cfg}")
-    logging.info(f"Data directory: {data_dir}")
-    logging.info(f"Output directory: {output_dir}")
-
     # Set up command line arguments for the training script
     sys.argv = [
         "train.py",
@@ -61,16 +56,20 @@ def run_experiment(cfg: dict) -> None:
         "--save_steps", str(train_cfg.get("save_steps", 50)),
     ]
 
+    # Optional MoE decoder flags
+    if model_cfg.get("use_moe_decoder", False):
+        sys.argv.append("--use_moe_decoder")
+        if model_cfg.get("num_experts") is not None:
+            sys.argv.extend(["--num_experts", str(model_cfg["num_experts"])])
+        if model_cfg.get("moe_hidden_dim") is not None:
+            sys.argv.extend(["--moe_hidden_dim", str(model_cfg["moe_hidden_dim"])])
+
     # Add optional parameters if they exist
     if "weight_decay" in train_cfg:
         sys.argv.extend(["--weight_decay", str(train_cfg["weight_decay"])])
     if "warmup_steps" in train_cfg:
         sys.argv.extend(["--warmup_steps", str(train_cfg["warmup_steps"])])
 
-    logging.info("Starting training with existing pipeline...")
-    logging.info(f"Command: {' '.join(sys.argv)}")
-    
-    # Run the existing training pipeline
     train_main()
 
 

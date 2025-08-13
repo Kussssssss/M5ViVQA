@@ -15,6 +15,10 @@ FULL_CONFIG = {
     "model": {
         "vit5_model": "VietAI/vit5-base",
         "vit_model": "google/vit-base-patch16-224-in21k",
+        # MoE decoder options
+        "use_moe_decoder": False,        # Set True to enable MoE in decoder
+        "num_experts": 4,               # Number of experts when MoE is enabled
+        "moe_hidden_dim": None,         # Hidden dim for MoE (defaults to 4*d_model if None)
     },
     "training": {
         "epochs": 3,
@@ -46,6 +50,10 @@ SAMPLE_CONFIG = {
     "model": {
         "vit5_model": "VietAI/vit5-base",
         "vit_model": "google/vit-base-patch16-224-in21k",
+        # MoE decoder options for sample as a demo
+        "use_moe_decoder": False,
+        "num_experts": 2,
+        "moe_hidden_dim": None,
     },
     "training": {
         "epochs": 1,

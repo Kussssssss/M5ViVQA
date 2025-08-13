@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import logging
 import os
 from typing import Callable
 
@@ -10,6 +9,7 @@ from transformers import Seq2SeqTrainingArguments
 
 from ..data.dataset import load_dataset, ViT5VQADataset, ViT5VQADataCollator
 from ..models.vit5_vqa import ViT5VQAModel
+from ..models.vit5_vqa_moe_decoder import ViT5VQAModelMoEDecoder
 from ..evaluation.metrics import compute_vqa_metrics
 from .trainer import CustomSeq2SeqTrainer
 
@@ -48,6 +48,15 @@ def parse_args() -> argparse.Namespace:
         "--vit_model", type=str, default="google/vit-base-patch16-224-in21k", help="Tên mô hình ViT"
     )
     parser.add_argument(
+        "--use_moe_decoder", action="store_true", help="Sử dụng mô hình có MoE trong decoder"
+    )
+    parser.add_argument(
+        "--num_experts", type=int, default=4, help="Số chuyên gia (experts) trong MoE decoder"
+    )
+    parser.add_argument(
+        "--moe_hidden_dim", type=int, default=None, help="Kích thước ẩn của MoE (mặc định 4*d_model)"
+    )
+    parser.add_argument(
         "--num_workers", type=int, default=4, help="Số worker cho DataLoader"
     )
     parser.add_argument(
@@ -70,8 +79,16 @@ def main():
     
     train_df, val_df, test_df = load_dataset(args.data_dir)
 
-    # Khởi tạo mô hình
-    model = ViT5VQAModel(vit5_model_name=args.vit5_model, vit_model_name=args.vit_model)
+    # Khởi tạo mô hình (hỗ trợ MoE decoder nếu được chọn)
+    if getattr(args, "use_moe_decoder", False):
+        model = ViT5VQAModelMoEDecoder(
+            vit5_model_name=args.vit5_model,
+            vit_model_name=args.vit_model,
+            num_experts=args.num_experts,
+            moe_hidden_dim=args.moe_hidden_dim,
+        )
+    else:
+        model = ViT5VQAModel(vit5_model_name=args.vit5_model, vit_model_name=args.vit_model)
     if torch.cuda.is_available():
         model.cuda()
     else:
@@ -95,7 +112,7 @@ def main():
         warmup_steps=args.warmup_steps,
         logging_dir=os.path.join(args.output_dir, "logs"),
         logging_steps=10,
-        eval_strategy="steps",
+        evaluation_strategy="steps",
         eval_steps=args.eval_steps,
         save_strategy="steps",
         save_steps=args.save_steps,
@@ -174,6 +191,7 @@ def main():
     trainer.train()
 
     test_results = trainer.evaluate(test_dataset)
+    print(test_results)
     model.save_pretrained(os.path.join(args.output_dir, "final_model"))
 
 
