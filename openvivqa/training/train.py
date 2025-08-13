@@ -110,7 +110,7 @@ def main():
         weight_decay=args.weight_decay,
         warmup_steps=args.warmup_steps,
         logging_dir=os.path.join(args.output_dir, "logs"),
-        logging_steps=2,
+        logging_steps=10,
         eval_strategy="steps",
         eval_steps=args.eval_steps,
         save_strategy="steps",
@@ -178,15 +178,10 @@ def main():
                 "meteor": 0.0, "rougeL": 0.0, "cider": 0.0
             }
         
-        # Tách predictions và references đã lọc
         filtered_predictions, filtered_references = zip(*valid_pairs)
         
-        # Chuyển đổi format để phù hợp với compute_vqa_metrics
-        # compute_vqa_metrics mong đợi: gts = {i: [ref]}, res = {i: [pred]}
-        gts = {i: [ref] for i, ref in enumerate(filtered_references)}
-        res = {i: [pred] for i, pred in enumerate(filtered_predictions)}
-        
         return compute_vqa_metrics(filtered_predictions, filtered_references)
+ 
 
     trainer = CustomSeq2SeqTrainer(
         model=model,

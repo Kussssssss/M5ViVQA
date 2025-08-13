@@ -57,8 +57,8 @@ def run_experiment(cfg: dict) -> None:
         "--vit5_model", model_cfg["vit5_model"],
         "--vit_model", model_cfg["vit_model"],
         "--num_workers", str(train_cfg.get("num_workers", 4)),
-        "--eval_steps", str(train_cfg.get("eval_steps", 2)),
-        "--save_steps", str(train_cfg.get("save_steps", 2)),
+        "--eval_steps", str(train_cfg.get("eval_steps", 50)),
+        "--save_steps", str(train_cfg.get("save_steps", 50)),
     ]
 
     # Add optional parameters if they exist
