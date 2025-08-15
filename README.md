@@ -65,39 +65,19 @@ Project cung cấp 2 kiến trúc mô hình:
 
 Dự án sử dụng duy nhất `config.py` để quản lý cấu hình.
 - `FULL_CONFIG`: cấu hình cho dữ liệu thật
-- `SAMPLE_CONFIG`: cấu hình tối giản cho dữ liệu mẫu
 
-Bạn có thể chọn cấu hình khi chạy:
+Thực thi với cấu hình:
 ```bash
 python main.py --config full
-# hoặc
-python main.py --config sample
 ```
 
-Ngoài ra, có thể override bằng CLI khi gọi trực tiếp `openvivqa.training.train`.
+Có thể override bằng CLI khi gọi trực tiếp `openvivqa.training.train`.
 
-## Cài đặt phụ thuộc
+## Cài đặt
 
-Project này được thiết kế để chạy trên **Kaggle Notebooks** với GPU. Để cài đặt các thư viện cần thiết:
-
-### Trên Kaggle:
-```bash
-# Cài đặt dependencies từ requirements.txt
-pip install -r requirements.txt
-
-# Hoặc cài đặt từng package chính
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-pip install transformers evaluate datasets
-pip install rouge-score nltk sacrebleu
-pip install gdown tqdm
-```
-
-### Trên môi trường local (tùy chọn):
 ```bash
 pip install -r requirements.txt
 ```
-
-**Lưu ý**: Kaggle đã có sẵn nhiều thư viện ML cơ bản, vì vậy `requirements.txt` chỉ chứa các dependencies cần thiết cho project cụ thể này.
 
 ## Sử dụng
 
@@ -121,21 +101,11 @@ python scripts/download_data.py \
   --test_url https://drive.google.com/uc?export=download&id=10azOS9TzgQl8HrztbexlKh08pkyMb4m5
 ```
 
-#### 3. Tạo dữ liệu mẫu để test:
-```bash
-python scripts/create_sample_data.py --output_dir sample_data
-```
-
 Sau khi chạy script, thư mục `out_dir` sẽ chứa ảnh và ba file
 `vlsp2023_train_data.json`, `vlsp2023_dev_data.json`, `vlsp2023_test_data.json`.
 
-### Huấn luyện mô hình (khuyến nghị)
+### Huấn luyện mô hình
 ```bash
-# Dữ liệu mẫu
-python scripts/create_sample_data.py --output_dir sample_data
-python main.py --config sample
-
-# Dữ liệu thật
 python main.py --config full
 ```
 
@@ -155,7 +125,7 @@ python -m openvivqa.training.train \
 
 ### Đánh giá
 
-Dự án sử dụng các thước đo BLEU‑1/2/3/4, METEOR, ROUGE‑L và CIDEr được triển khai trong bộ mã gốc của OpenViVQA. Các hàm tính điểm này nằm trong thư mục `openvivqa/evaluation` và được gọi thông qua hàm `compute_vqa_metrics`. Nhờ vậy, kết quả đánh giá sẽ nhất quán với những báo cáo chính thức của cuộc thi VLSP 2023.
+Dự án sử dụng các thước đo BLEU‑1/2/3/4, METEOR, ROUGE‑L và CIDEr được triển khai trong bộ mã gốc của OpenViVQA. Các hàm tính điểm này nằm trong thư mục `openvivqa/evaluation` và được gọi thông qua hàm `compute_vqa_metrics`.
 
 #### Metrics có sẵn:
 - **BLEU-1/2/3/4**: Đo lường độ chính xác của n-gram trong câu trả lời
@@ -169,91 +139,4 @@ Dự án sử dụng các thước đo BLEU‑1/2/3/4, METEOR, ROUGE‑L và CID
 - **Recall**: Độ bao phủ
 - **F1**: Trung bình điều hòa của precision và recall
 
-Chức năng `compute_vqa_metrics` trong `openvivqa/evaluation/metrics.py` cung cấp
-phương thức tính BLEU‑1/2/3/4, METEOR, ROUGE‑L và CIDEr cho dự đoán VQA. Hàm
-được tích hợp sẵn trong script huấn luyện để đánh giá tự động.
-
-## Đóng góp
-
-Mọi đóng góp nhằm cải thiện code hoặc tài liệu đều được hoan nghênh. Hãy tạo
-pull request hoặc issue nếu bạn gặp vấn đề.
-
-## Chạy thử với dữ liệu mẫu
-
-### Trên Kaggle (Khuyến nghị):
-1. **Clone repository**:
-```bash
-!git clone https://github.com/Kussssssss/M5ViVQA.git
-%cd M5ViVQA
-```
-
-2. **Cài đặt dependencies**:
-```bash
-!pip install -r requirements.txt
-```
-
-3. **Tạo dữ liệu mẫu**:
-```bash
-!python scripts/create_sample_data.py --output_dir sample_data
-```
-
-4. **Huấn luyện mô hình**:
-```bash
-!python main.py --config sample
-```
-
-### Trên môi trường local:
-
-#### Cách 1: Sử dụng main.py (Khuyến nghị)
-```bash
-# Tạo dữ liệu mẫu
-python scripts/create_sample_data.py --output_dir sample_data
-
-# Huấn luyện với cấu hình mẫu (sử dụng training pipeline có sẵn)
-python main.py --config sample
-```
-
-**Lưu ý**: `main.py` tự động chuyển đổi cấu hình thành command line arguments và gọi training pipeline từ `openvivqa.training.train`.
-
-#### Cách 2: Sử dụng script training trực tiếp
-```bash
-# Tạo dữ liệu mẫu
-python scripts/create_sample_data.py --output_dir sample_data
-
-# Huấn luyện với script training
-python -m openvivqa.training.train \
-  --data_dir sample_data \
-  --output_dir sample_results \
-  --epochs 1 \
-  --batch_size 1 \
-  --gradient_accumulation_steps 1 \
-  --learning_rate 1e-4 \
-  --num_workers 0 \
-  --eval_steps 1 \
-  --save_steps 1 \
-  --generation_max_length 32 \
-  --generation_num_beams 1
-```
-
-Thực nghiệm nhỏ này chỉ cần một GPU với VRAM khoảng **8 GB** (hoặc có thể chạy trên CPU, nhưng thời gian sẽ lâu hơn). Nhờ dữ liệu rất nhỏ và siêu tham số tối giản, bạn có thể kiểm tra toàn bộ quy trình huấn luyện và đánh giá mô hình trong vòng một vài phút.
-
-## Test Metrics
-
-Để kiểm tra xem các metrics có hoạt động đúng không:
-
-### Trên Kaggle:
-```bash
-!python test_metrics.py
-```
-
-### Trên môi trường local:
-```bash
-python test_metrics.py
-```
-
-Script này sẽ test hàm `compute_vqa_metrics` với dữ liệu mẫu và đảm bảo rằng:
-- BLEU-1/2/3/4, METEOR, ROUGE-L có giá trị trong khoảng [0, 1]
-- CIDEr có giá trị không âm
-- Tất cả các metrics được tính toán thành công
-
-**Lưu ý**: Trên Kaggle, bạn có thể chạy trực tiếp các lệnh Python mà không cần `!` prefix nếu đang sử dụng Jupyter notebook.
+Chức năng `compute_vqa_metrics` trong `openvivqa/evaluation/metrics.py` cung cấp phương thức tính BLEU‑1/2/3/4, METEOR, ROUGE‑L và CIDEr cho dự đoán VQA. Hàm được tích hợp sẵn trong script huấn luyện để đánh giá tự động.
